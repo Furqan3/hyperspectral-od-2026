@@ -1,0 +1,12 @@
+# [HSI] D-FINE-S trained on ALL 3000 train images (fold0..4), i.e. +25% data vs the fold runs.
+# Every experiment so far held out 600 images, so no model has seen the full training set yet;
+# more data is the one untested change that should transfer to the hidden test/ranking sets.
+# NOTE: val_dataloader still points at fold0_val, which is INSIDE this training set -> its AP is
+# progress monitoring only, NOT a held-out score. Judge this model on the public LB.
+__include__: ['./hsi_deim_dfine_s.yml']
+
+output_dir: ../../runs/deim_all_dfine_s
+
+train_dataloader:
+  dataset:
+    ann_file: ../../data/prepared/coco/all_train.json

@@ -1,0 +1,27 @@
+# [HSI] D-FINE-S with an extra stride-4 (P2) feature level in the neck and decoder.
+# Our objects are 15-25 px, so at stride 8 they cover only 2-3 cells. This is the D-FINE analogue of
+# YOLO's P2 head. The P2 projection/feature layers have no pretrained counterpart and start random;
+# everything else still loads from the Objects365+COCO checkpoint.
+__include__: ['./hsi_deim_dfine_s.yml']
+
+output_dir: ../../runs/deim_f0_dfine_s_p2
+
+HGNetv2:
+  return_idx: [0, 1, 2, 3]          # B0 stages: 64, 256, 512, 1024 ch at strides 4, 8, 16, 32
+
+HybridEncoder:
+  in_channels: [64, 256, 512, 1024]
+  feat_strides: [4, 8, 16, 32]
+  use_encoder_idx: [3]              # keep the transformer block on the stride-32 level only
+
+DFINETransformer:
+  feat_channels: [256, 256, 256, 256]
+  feat_strides: [4, 8, 16, 32]
+  num_levels: 4
+  num_points: [3, 3, 6, 3]   # one entry per level (base is [3, 6, 3] for strides 8/16/32)
+
+train_dataloader:
+  total_batch_size: 4               # stride-4 tokens: ~43.5k anchors vs 10.7k
+
+val_dataloader:
+  total_batch_size: 4

@@ -1,0 +1,23 @@
+# [HSI] Best recipe + partial-annotation handling (ignore_conf / ignore_classes in DEIMCriterion).
+# Diagnosis: only some instances of the street classes are labelled (in 1675.png, 4 of ~15 bollards),
+# so a confident unmatched prediction is often a REAL object the annotator skipped. Counting it as
+# background teaches the model to suppress true objects. Those entries now get zero background weight.
+# Street class ids: car 5, e-bike 8, people 14, stone_block 16 (their AP is 0.42-0.58 vs ~0.78 elsewhere).
+__include__: ['./hsi_deim_dfine_s_ms1536_all_e40.yml']
+
+output_dir: ../../runs/deim_all_ms1536_e40_ignore
+
+DEIMCriterion:
+  weight_dict: {loss_vfl: 1, loss_bbox: 5, loss_giou: 2, loss_fgl: 0.15, loss_ddf: 1.5, loss_mal: 1}
+  losses: ['mal', 'boxes', 'local']
+  alpha: 0.75
+  gamma: 1.5
+  reg_max: 32
+  ignore_conf: 0.5
+  ignore_weight: 0.1
+  ignore_classes: [5, 8, 14, 16]
+  matcher:
+    type: HungarianMatcher
+    weight_dict: {cost_class: 2, cost_bbox: 5, cost_giou: 2}
+    alpha: 0.25
+    gamma: 2.0

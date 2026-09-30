@@ -1,0 +1,17 @@
+# [HSI] D-FINE-S on DENOISED input (images/{train,test}_dn): spectral PCA k=6 + per-band bilateral.
+# Rationale: fold-0 and fold-1 both give ~0.710 while the public LB gives 0.645, i.e. the gap is the
+# train/test image difference, not validation error. Denoising is applied identically to train and test,
+# so unlike augmentation or capacity it narrows that gap instead of fitting the training scenes harder.
+# Measured on the images: -44% noise in flat regions, -0.1% box edge contrast, spectral separability intact.
+# Everything else is identical to hsi_deim_dfine_s.yml (our LB-best model, 0.64531).
+__include__: ['./hsi_deim_dfine_s.yml']
+
+output_dir: ../../runs/deim_f0_dfine_s_dn
+
+train_dataloader:
+  dataset:
+    img_folder: ../../data/prepared/images/train_dn
+
+val_dataloader:
+  dataset:
+    img_folder: ../../data/prepared/images/train_dn

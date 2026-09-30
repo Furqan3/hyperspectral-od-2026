@@ -1,0 +1,32 @@
+# [HSI] D-FINE-L with the winning multi-scale @1536 recipe (S version: local 0.7163, LB 0.64669).
+# batch 2 (not 4): 1536 is 2.25x the pixels of the 1024 L recipe.
+__include__: ['./hsi_deim_dfine_l.yml']
+output_dir: ../../runs/deim_f0_dfine_l_ms1536
+eval_spatial_size: [768, 1536]
+train_dataloader:
+  total_batch_size: 4
+  dataset:
+    transforms:
+      ops:
+        - {type: RandomIoUCrop, p: 0.8}
+        - {type: SanitizeBoundingBoxes, min_size: 1}
+        - {type: RandomHorizontalFlip}
+        - {type: Resize, size: [768, 1536], }
+        - {type: SanitizeBoundingBoxes, min_size: 1}
+        - {type: ConvertTensorImage, dtype: 'float32', scale: True}
+        - {type: ConvertBoxes, fmt: 'cxcywh', normalize: True}
+      policy:
+        epoch: [4, 29, 50]
+        ops: ['RandomIoUCrop']
+  collate_fn:
+    base_size: 1536
+    base_size_repeat: 3
+    hw_ratio: 0.5
+    stop_epoch: 50
+val_dataloader:
+  total_batch_size: 4
+  dataset:
+    transforms:
+      ops:
+        - {type: Resize, size: [768, 1536], }
+        - {type: ConvertTensorImage, dtype: 'float32', scale: True}

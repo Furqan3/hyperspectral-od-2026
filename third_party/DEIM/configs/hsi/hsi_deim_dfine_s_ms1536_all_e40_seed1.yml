@@ -1,0 +1,33 @@
+# [HSI] SEED REPEAT of the 0.65797 run (identical config, different seed) to measure run-to-run noise.
+# Our recent decisions rest on 0.004-0.007 gaps from single runs; this says how much of that is real.
+# original header:
+# [HSI] Winning recipe, SHORT schedule: all 3000 images, multi-scale @1536, 40 epochs instead of 72.
+# The LB checkpoint curve of the 72-epoch run falls after the midpoint:
+#   epoch 47 -> 0.65525 (our best) | epoch 63 -> 0.65080 | epoch 71 (best_stg2) -> 0.64281
+# so the last third of training costs up to 0.012. Stages scaled 72/36/8 -> 40/20/4,
+# checkpoint_freq 4 so one run maps the whole curve.
+__include__: ['./hsi_deim_dfine_s_ms1536_all.yml']
+
+output_dir: ../../runs/deim_all_ms1536_e40_seed1
+epoches: 40
+flat_epoch: 20
+no_aug_epoch: 4
+checkpoint_freq: 4
+
+train_dataloader:
+  dataset:
+    transforms:                 # restated in full: 'policy' lives under transforms, not under dataset
+      ops:
+        - {type: RandomIoUCrop, p: 0.8}
+        - {type: SanitizeBoundingBoxes, min_size: 1}
+        - {type: RandomHorizontalFlip}
+        - {type: Resize, size: [768, 1536], }
+        - {type: SanitizeBoundingBoxes, min_size: 1}
+        - {type: ConvertTensorImage, dtype: 'float32', scale: True}
+        - {type: ConvertBoxes, fmt: 'cxcywh', normalize: True}
+      policy:
+        epoch: [4, 20, 36]
+        ops: ['RandomIoUCrop']
+  collate_fn:
+    mixup_epochs: [4, 20]
+    stop_epoch: 36

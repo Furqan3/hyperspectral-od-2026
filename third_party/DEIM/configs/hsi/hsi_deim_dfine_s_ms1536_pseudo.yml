@@ -1,0 +1,18 @@
+# [HSI] Self-training: 3000 labelled train images + 987 TEST images pseudo-labelled by seed0
+# (LB 0.65797) at conf>=0.5, which gives 3.46 boxes/image against the real 3.37.
+# Rationale: every other lever we tried rearranged the same information and landed inside the
+# seed-noise band (recipe mean 0.6474, SD 0.0087). This one adds information - the model gets to
+# fit the actual test imagery (transductive learning). Single model; labels are machine-generated,
+# not hand-drawn, but declare this in the code package.
+__include__: ['./hsi_deim_dfine_s_ms1536_all_e40.yml']
+
+output_dir: ../../runs/deim_pseudo_ms1536_e40
+
+train_dataloader:
+  dataset:
+    img_folder: ../../data/prepared/images/train_pseudo
+    ann_file: ../../data/prepared/coco/all_plus_pseudo.json
+
+val_dataloader:
+  dataset:
+    img_folder: ../../data/prepared/images/train_pseudo

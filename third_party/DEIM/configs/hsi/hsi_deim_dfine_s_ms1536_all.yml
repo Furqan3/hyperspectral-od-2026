@@ -1,0 +1,11 @@
+# [HSI] Best LB recipe (multi-scale @1536, LB 0.64669) retrained on ALL 3000 images.
+# The earlier all-data run used the plain 1024 recipe and lost on the LB (0.6417/0.6375 vs 0.6453),
+# so "all data" has never been tested with the recipe that actually wins. val = fold0_val is INSIDE
+# this training set: its AP is progress monitoring only, judge this model on the public LB.
+__include__: ['./hsi_deim_dfine_s_ms1536.yml']
+
+output_dir: ../../runs/deim_all_ms1536
+
+train_dataloader:
+  dataset:
+    ann_file: ../../data/prepared/coco/all_train.json

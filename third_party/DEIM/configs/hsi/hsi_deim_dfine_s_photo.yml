@@ -1,0 +1,23 @@
+# [HSI] D-FINE-S + band-shared photometric augmentation (gain + sensor noise).
+# The YOLO equivalent was the only YOLO lever to beat noise: 0.6951 -> 0.7007 (+0.0056), concentrated in the
+# dark/noisy street classes (stone_block +0.038, banana +0.022, e-bike +0.011) and in detection (mAP50 +0.0067)
+# rather than box precision (mAP75 -0.0034).
+__include__: ['./hsi_deim_dfine_s.yml']
+
+output_dir: ../../runs/deim_f0_dfine_s_photo
+
+train_dataloader:
+  dataset:
+    transforms:
+      ops:
+        - {type: RandomIoUCrop, p: 0.8}
+        - {type: SanitizeBoundingBoxes, min_size: 1}
+        - {type: RandomHorizontalFlip}
+        - {type: Resize, size: [512, 1024], }
+        - {type: SanitizeBoundingBoxes, min_size: 1}
+        - {type: RandomBandGainNoise, gain: 0.25, noise: 6.0, p: 0.5}
+        - {type: ConvertTensorImage, dtype: 'float32', scale: True}
+        - {type: ConvertBoxes, fmt: 'cxcywh', normalize: True}
+      policy:
+        epoch: [4, 36, 64]
+        ops: ['RandomIoUCrop', 'RandomBandGainNoise']   # both off in the final clean epochs

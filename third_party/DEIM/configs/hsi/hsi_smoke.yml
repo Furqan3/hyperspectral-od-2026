@@ -1,0 +1,21 @@
+# [HSI] 2-epoch pipeline check on 32/32 images (coco/mini_*.json)
+__include__: ['./hsi_deim_dfine_s.yml']
+
+output_dir: ../../runs/deim_smoke
+epoches: 2
+flat_epoch: 1
+no_aug_epoch: 0
+checkpoint_freq: 1
+warmup_iter: 100   # 10 ramped the LR to full within 10 steps and the fresh 16-band stem diverged
+
+train_dataloader:
+  total_batch_size: 4
+  num_workers: 2
+  dataset:
+    ann_file: ../../data/prepared/coco/mini_train.json
+
+val_dataloader:
+  total_batch_size: 4
+  num_workers: 2
+  dataset:
+    ann_file: ../../data/prepared/coco/mini_val.json

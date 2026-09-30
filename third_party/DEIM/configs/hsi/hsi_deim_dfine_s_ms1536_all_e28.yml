@@ -1,0 +1,21 @@
+# [HSI] Winning recipe on all 3000 images, 28-epoch schedule.
+# LB so far by schedule length: 72 ep -> 0.65080 (final) / 0.65525 (ep47) | 40 ep -> 0.65797 (final).
+# Shorter is better so far; 28 and 24 bracket the question of where it turns around.
+# Stages scaled from 40/20/4: flat=14, no_aug=2, checkpoint every 4 epochs.
+__include__: ['./hsi_deim_dfine_s_ms1536_all_e40.yml']
+
+output_dir: ../../runs/deim_all_ms1536_e28
+epoches: 28
+flat_epoch: 14
+no_aug_epoch: 2
+checkpoint_freq: 4
+
+train_dataloader:
+  dataset:
+    transforms:
+      policy:
+        epoch: [4, 14, 24]
+        ops: ['RandomIoUCrop']
+  collate_fn:
+    mixup_epochs: [4, 14]
+    stop_epoch: 24

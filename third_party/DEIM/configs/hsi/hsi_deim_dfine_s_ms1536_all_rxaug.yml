@@ -1,0 +1,23 @@
+# [HSI] Short-schedule all-data run + RandomEnhanceVariant: each sample is served plain, or
+# Retinex+CLAHE+sharpen (mild or strong), chosen at random (p=0.5).
+# Fixed enhancement LOST on held-out fold 0 (plain 0.7163 > mild 0.7146 > strong ~0.712); this
+# instead uses the three views as augmentation, which is what helped on YOLO (+0.0056).
+__include__: ['./hsi_deim_dfine_s_ms1536_all_e40.yml']
+
+output_dir: ../../runs/deim_all_ms1536_rxaug
+
+train_dataloader:
+  dataset:
+    transforms:
+      ops:
+        - {type: RandomIoUCrop, p: 0.8}
+        - {type: SanitizeBoundingBoxes, min_size: 1}
+        - {type: RandomHorizontalFlip}
+        - {type: Resize, size: [768, 1536], }
+        - {type: SanitizeBoundingBoxes, min_size: 1}
+        - {type: RandomEnhanceVariant, p: 0.5}
+        - {type: ConvertTensorImage, dtype: 'float32', scale: True}
+        - {type: ConvertBoxes, fmt: 'cxcywh', normalize: True}
+      policy:
+        epoch: [4, 20, 36]
+        ops: ['RandomIoUCrop', 'RandomEnhanceVariant']   # both off in the final clean epochs

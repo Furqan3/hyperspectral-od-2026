@@ -1,0 +1,17 @@
+# [HSI] D-FINE-S + aspect-preserving MULTI-SCALE training (research-backed: multi-scale is reported worth
+# ~+1 mAP and, more relevant here, it is a domain-robustness technique - our problem is that test images
+# differ from training images, not that we underfit).
+# DEIM's stock multi-scale resizes to a SQUARE (F.interpolate(size=int)), which distorts these 1:2 cubes;
+# engine/data/dataloader.py is patched with hw_ratio so scales are (h, w) pairs: 384x768 ... 640x1280,
+# centred on the normal 512x1024. Boxes are normalised cxcywh, so they are unaffected.
+# Everything else identical to hsi_deim_dfine_s.yml (LB-best model, 0.64531).
+__include__: ['./hsi_deim_dfine_s.yml']
+
+output_dir: ../../runs/deim_f0_dfine_s_ms
+
+train_dataloader:
+  collate_fn:
+    base_size: 1024
+    base_size_repeat: 3
+    hw_ratio: 0.5
+    stop_epoch: 64

@@ -1,0 +1,17 @@
+# [HSI] D-FINE-S with a 120-epoch schedule (72 epochs still gained ~0.001/6 epochs at the end).
+__include__: ['./hsi_deim_dfine_s.yml']
+
+output_dir: ../../runs/deim_f0_dfine_s_e120
+
+epoches: 120
+flat_epoch: 60
+no_aug_epoch: 12
+
+train_dataloader:
+  dataset:
+    transforms:
+      policy:
+        epoch: [4, 60, 108]
+  collate_fn:
+    mixup_epochs: [4, 60]
+    stop_epoch: 108

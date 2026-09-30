@@ -1,0 +1,6 @@
+weights/*.pth
+weights/*.pt
+__pycache__/
+*.pyc
+data/
+submission/reproduced.csv

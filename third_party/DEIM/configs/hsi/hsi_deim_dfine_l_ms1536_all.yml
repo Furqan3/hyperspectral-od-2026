@@ -1,0 +1,12 @@
+# [HSI] D-FINE-L, multi-scale @1536, ALL 3000 images.
+# Rationale: all-data + ms1536 on the SMALL model scored 0.65525 on the LB at epoch 48/72 (vs 0.64669
+# best before), so more data is the lever that works. L @1024 fold0 lost on the LB (0.63616), but that
+# was the weaker recipe and the weaker data split - this tests capacity under the recipe that wins.
+# val = fold0_val is INSIDE training: progress monitoring only, judge on the LB.
+__include__: ['./hsi_deim_dfine_l_ms1536.yml']
+
+output_dir: ../../runs/deim_all_l_ms1536
+
+train_dataloader:
+  dataset:
+    ann_file: ../../data/prepared/coco/all_train.json

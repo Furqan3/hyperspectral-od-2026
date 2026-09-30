@@ -1,0 +1,84 @@
+# [HSI] DEIM + D-FINE-S fine-tuned from the Objects365+COCO checkpoint on 16-band cubes (fold 0).
+# train: python train.py -c configs/hsi/hsi_deim_dfine_s.yml -t <weights/dfine_s_obj2coco_16ch.pth> --use-amp --seed 0
+__include__: [
+  '../deim_dfine/deim_hgnetv2_s_coco.yml',
+]
+
+output_dir: ../../runs/deim_f0_dfine_s
+
+num_classes: 18
+remap_mscoco_category: False
+eval_spatial_size: [512, 1024]  # h w: cube is ~250 x 495, 2x upscale keeping its 1:2 aspect
+
+# base/deim.yml switches the decoder to SiLU, but the official D-FINE checkpoints were trained with ReLU:
+# the weights load (same shapes) yet 46% of the first-step boxes were invalid (negative w/h) -> crash in the
+# matcher's GIoU assert. With ReLU: 0/1200 invalid.
+DFINETransformer:
+  activation: relu
+  mlp_act: relu
+
+HGNetv2:
+  in_chans: 16          # [HSI patch] 16 spectral bands
+  pretrained: False     # all weights come from the full detector checkpoint passed with -t
+
+# LRs halved vs the COCO recipe: batch 8 instead of 32, and a freshly converted 16-band stem
+optimizer:
+  type: AdamW
+  params:
+    -
+      params: '^(?=.*backbone)(?!.*bn).*$'
+      lr: 0.0001
+    -
+      params: '^(?=.*(?:norm|bn)).*$'     # except bias
+      weight_decay: 0.
+  lr: 0.0002
+  betas: [0.9, 0.999]
+  weight_decay: 0.0001
+
+# warm-up is quadratic (lr * (it/warmup)^2): the COCO default of 2000 its is ~7 epochs at batch 8 (298 it/epoch),
+# so after epoch 0 the LR was still ~1% and AP 0.000. 600 its ~= 2 epochs. (deim_f0_dfine_s started with 2000.)
+warmup_iter: 600
+
+epoches: 72
+flat_epoch: 36
+no_aug_epoch: 8
+checkpoint_freq: 12
+
+train_dataloader:
+  total_batch_size: 8   # shares the 3090 with the YOLO queue
+  num_workers: 6
+  dataset:
+    img_folder: ../../data/prepared/images/train
+    ann_file: ../../data/prepared/coco/fold0_train.json
+    transforms:
+      # no RandomPhotometricDistort (hue/saturation need RGB), no PIL Mosaic,
+      # no RandomZoomOut (objects are already 15-25 px)
+      ops:
+        - {type: RandomIoUCrop, p: 0.8}
+        - {type: SanitizeBoundingBoxes, min_size: 1}
+        - {type: RandomHorizontalFlip}
+        - {type: Resize, size: [512, 1024], }
+        - {type: SanitizeBoundingBoxes, min_size: 1}
+        - {type: ConvertTensorImage, dtype: 'float32', scale: True}
+        - {type: ConvertBoxes, fmt: 'cxcywh', normalize: True}
+      policy:
+        epoch: [4, 36, 64]
+        ops: ['RandomIoUCrop']
+      mosaic_prob: 0.0
+  collate_fn:
+    base_size: 1024
+    base_size_repeat: ~   # square multi-scale would distort the 1:2 images -> off
+    mixup_prob: 0.5
+    mixup_epochs: [4, 36]
+    stop_epoch: 64
+
+val_dataloader:
+  total_batch_size: 16
+  num_workers: 8
+  dataset:
+    img_folder: ../../data/prepared/images/train
+    ann_file: ../../data/prepared/coco/fold0_val.json
+    transforms:
+      ops:
+        - {type: Resize, size: [512, 1024], }
+        - {type: ConvertTensorImage, dtype: 'float32', scale: True}

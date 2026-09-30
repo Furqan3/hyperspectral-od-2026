@@ -1,0 +1,44 @@
+# [HSI] Winning e40 all-data recipe + NBBOX-style GT box jitter (shift=0.04, scale=0.04).
+#
+# Measured on our data: our boxes match the GT at IoU 0.876, while two humans labelling the SAME
+# object agree at only IoU 0.845 +/- 0.087. We are already more consistent with the ground truth
+# than the annotators are with each other, so the localisation error we keep trying to remove is
+# mostly annotation noise. That is the Label Convergence result (arXiv:2409.09412): contradictory
+# test labels impose an mAP ceiling, and all 20 teams here sit in a 0.029-wide band, which is the
+# signature of a label-limited benchmark. It explains why resolution, finer box bins, weight
+# averaging, pseudo-labelling and repeat-factor sampling all improved local numbers and lost on
+# the leaderboard - they reduce random error that the labels cannot reward.
+#
+# NBBOX (arXiv:2409.09424) attacks the other half: train on a DISTRIBUTION of plausible boxes per
+# object so the model regresses to their centre - the consensus box - rather than reproducing one
+# annotator's draw. That is the best estimator against an unseen annotator, and it matches our
+# measurement that box perturbation costs about half as much on the LB as it does locally.
+# Jitter is scale-relative (15 px and 200 px objects perturbed equally in relative terms) and
+# cardinal-biased (one axis per sample), per the inter-annotator work. Verified at 0.04: median
+# IoU 0.866 between original and jittered box, flat across 15-60 px, zero degenerate boxes.
+# Training targets only; val and inference untouched. Seeds 0 and 2 stay matched pairs.
+__include__: ["./hsi_deim_dfine_s_ms1536_all_e40.yml"]
+
+output_dir: /home/aiops/hsi/runs/deim_all_ms1536_e40_nbbox04
+
+train_dataloader:
+  dataset:
+    transforms:
+      ops:
+        - {type: RandomIoUCrop, p: 0.8}
+        - {type: SanitizeBoundingBoxes, min_size: 1}
+        - {type: RandomHorizontalFlip}
+        - {type: Resize, size: [768, 1536], }
+        - {type: SanitizeBoundingBoxes, min_size: 1}
+        - {type: RandomBoxJitter, shift: 0.04, scale: 0.04, p: 0.8}
+        - {type: ConvertTensorImage, dtype: "float32", scale: True}
+        - {type: ConvertBoxes, fmt: "cxcywh", normalize: True}
+      policy:
+        epoch: [4, 20, 36]
+        ops: ["RandomIoUCrop"]
+  collate_fn:
+    base_size: 1536
+    base_size_repeat: 3
+    hw_ratio: 0.5
+    mixup_epochs: [4, 20]
+    stop_epoch: 36

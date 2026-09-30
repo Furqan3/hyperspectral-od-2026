@@ -1,0 +1,77 @@
+# [HSI] DEIM + D-FINE-M fine-tuned from the Objects365+COCO checkpoint on 16-band cubes (fold 0).
+# Same data/aug/decoder settings as hsi_deim_dfine_s.yml; model and LRs from deim_hgnetv2_m_coco.yml.
+__include__: [
+  '../deim_dfine/deim_hgnetv2_m_coco.yml',
+]
+
+output_dir: ../../runs/deim_f0_dfine_m
+
+num_classes: 18
+remap_mscoco_category: False
+eval_spatial_size: [512, 1024]  # h w
+
+# D-FINE checkpoints use ReLU in the decoder (DEIM's recipe switches to SiLU -> invalid boxes)
+DFINETransformer:
+  activation: relu
+  mlp_act: relu
+
+HGNetv2:
+  in_chans: 16
+  pretrained: False
+
+# LRs halved vs the COCO recipe (batch 6-8 instead of 32)
+optimizer:
+  type: AdamW
+  params:
+    -
+      params: '^(?=.*backbone)(?!.*bn).*$'
+      lr: 0.00002
+    -
+      params: '^(?=.*(?:norm|bn)).*$'
+      weight_decay: 0.
+  lr: 0.0002
+  betas: [0.9, 0.999]
+  weight_decay: 0.0001
+
+warmup_iter: 600
+epoches: 72
+flat_epoch: 36
+no_aug_epoch: 8
+checkpoint_freq: 12
+
+train_dataloader:
+  total_batch_size: 6   # shares the 3090 with the YOLO queue
+  num_workers: 6
+  dataset:
+    img_folder: ../../data/prepared/images/train
+    ann_file: ../../data/prepared/coco/fold0_train.json
+    transforms:
+      ops:
+        - {type: RandomIoUCrop, p: 0.8}
+        - {type: SanitizeBoundingBoxes, min_size: 1}
+        - {type: RandomHorizontalFlip}
+        - {type: Resize, size: [512, 1024], }
+        - {type: SanitizeBoundingBoxes, min_size: 1}
+        - {type: ConvertTensorImage, dtype: 'float32', scale: True}
+        - {type: ConvertBoxes, fmt: 'cxcywh', normalize: True}
+      policy:
+        epoch: [4, 36, 64]
+        ops: ['RandomIoUCrop']
+      mosaic_prob: 0.0
+  collate_fn:
+    base_size: 1024
+    base_size_repeat: ~
+    mixup_prob: 0.5
+    mixup_epochs: [4, 36]
+    stop_epoch: 64
+
+val_dataloader:
+  total_batch_size: 8
+  num_workers: 6
+  dataset:
+    img_folder: ../../data/prepared/images/train
+    ann_file: ../../data/prepared/coco/fold0_val.json
+    transforms:
+      ops:
+        - {type: Resize, size: [512, 1024], }
+        - {type: ConvertTensorImage, dtype: 'float32', scale: True}

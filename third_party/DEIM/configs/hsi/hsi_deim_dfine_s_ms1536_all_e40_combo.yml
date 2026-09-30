@@ -1,0 +1,39 @@
+# [HSI] Best recipe + BOTH new mechanisms: partial-annotation ignore AND band dropout.
+# Rationale: the winning ingredients so far stacked cleanly (all-data + 40 epochs + multi-scale),
+# and these two attack different failure modes - the ignore loss stops punishing correct detections
+# of unlabelled street objects, band dropout spreads the lopsided per-band reliance (band 6 -0.089).
+# Started before their individual LB scores are known, so a winner is ready either way.
+__include__: ['./hsi_deim_dfine_s_ms1536_all_e40.yml']
+
+output_dir: ../../runs/deim_all_ms1536_e40_combo
+
+DEIMCriterion:
+  weight_dict: {loss_vfl: 1, loss_bbox: 5, loss_giou: 2, loss_fgl: 0.15, loss_ddf: 1.5, loss_mal: 1}
+  losses: ['mal', 'boxes', 'local']
+  alpha: 0.75
+  gamma: 1.5
+  reg_max: 32
+  ignore_conf: 0.5
+  ignore_weight: 0.1
+  ignore_classes: [5, 8, 14, 16]
+  matcher:
+    type: HungarianMatcher
+    weight_dict: {cost_class: 2, cost_bbox: 5, cost_giou: 2}
+    alpha: 0.25
+    gamma: 2.0
+
+train_dataloader:
+  dataset:
+    transforms:
+      ops:
+        - {type: RandomIoUCrop, p: 0.8}
+        - {type: SanitizeBoundingBoxes, min_size: 1}
+        - {type: RandomHorizontalFlip}
+        - {type: Resize, size: [768, 1536], }
+        - {type: SanitizeBoundingBoxes, min_size: 1}
+        - {type: RandomBandDropout, p: 0.3, max_bands: 2}
+        - {type: ConvertTensorImage, dtype: 'float32', scale: True}
+        - {type: ConvertBoxes, fmt: 'cxcywh', normalize: True}
+      policy:
+        epoch: [4, 20, 36]
+        ops: ['RandomIoUCrop', 'RandomBandDropout']

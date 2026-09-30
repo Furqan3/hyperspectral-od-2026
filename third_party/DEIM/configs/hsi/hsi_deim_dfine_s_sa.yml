@@ -1,0 +1,12 @@
+# [HSI] D-FINE-S + SCALE-AWARE box loss (research: Wise-IoU / FP-IoU family).
+# IoU is hypersensitive to location error on tiny objects: 1 px on a 15 px box costs ~13% IoU, on a 45 px
+# box ~4%. 70% of this dataset is < 32 px and all remaining headroom is at IoU 0.75-0.95, so the box losses
+# (L1 + GIoU) are weighted per box by (area/mean_area)^-0.5, clipped [0.5, 3] and renormalised to mean 1:
+# 15 px -> 1.58x, 24 px -> 0.99x, 45 px -> 0.53x. Total loss scale unchanged, only its distribution.
+# Patch: engine/deim/deim_criterion.py (scale_aware_alpha).
+__include__: ['./hsi_deim_dfine_s.yml']
+
+output_dir: ../../runs/deim_f0_dfine_s_sa
+
+DEIMCriterion:
+  scale_aware_alpha: 0.5

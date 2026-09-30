@@ -1,0 +1,22 @@
+# [HSI] Best recipe + RandomBandDropout: zero 1-2 of the 16 bands with p=0.3 during training.
+# Band ablation on the trained model: dropping band 6 costs -0.089 mAP, band 12 -0.058, band 9 0.0000
+# -> reliance is very uneven. This spreads it, the same robustness mechanism that made multi-scale win.
+__include__: ['./hsi_deim_dfine_s_ms1536_all_e40.yml']
+
+output_dir: ../../runs/deim_all_ms1536_e40_banddrop
+
+train_dataloader:
+  dataset:
+    transforms:
+      ops:
+        - {type: RandomIoUCrop, p: 0.8}
+        - {type: SanitizeBoundingBoxes, min_size: 1}
+        - {type: RandomHorizontalFlip}
+        - {type: Resize, size: [768, 1536], }
+        - {type: SanitizeBoundingBoxes, min_size: 1}
+        - {type: RandomBandDropout, p: 0.3, max_bands: 2}
+        - {type: ConvertTensorImage, dtype: 'float32', scale: True}
+        - {type: ConvertBoxes, fmt: 'cxcywh', normalize: True}
+      policy:
+        epoch: [4, 20, 36]
+        ops: ['RandomIoUCrop', 'RandomBandDropout']

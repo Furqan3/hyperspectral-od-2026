@@ -1,0 +1,12 @@
+# [HSI] D-FINE-L @ multi-scale 1536 trained on Retinex+CLAHE+sharpen (mild) cubes.
+# Enhancement is applied as ONE gain map shared by all 16 bands (src/retinex.py:enhance_view), so
+# band ratios - the real-vs-counterfeit cue - are unchanged. Measured: +104% (mild) / +164% (strong)
+# edge detail, but detail/noise drops 21 -> 15 / 13, so this may well hurt; the run settles it.
+__include__: ['./hsi_deim_dfine_l_ms1536.yml']
+output_dir: ../../runs/deim_f0_l_rxmild
+train_dataloader:
+  dataset:
+    img_folder: ../../data/prepared/images/train_rxmild
+val_dataloader:
+  dataset:
+    img_folder: ../../data/prepared/images/train_rxmild

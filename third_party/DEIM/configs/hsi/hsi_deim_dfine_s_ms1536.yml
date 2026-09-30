@@ -1,0 +1,16 @@
+# [HSI] D-FINE-S: multi-scale (the only lever that improved local box precision: 0.7101 -> 0.7147,
+# mAP75 +0.010, small +0.010) combined with the higher 768x1536 base resolution.
+# Both target the same failure mode - box precision on 15-25 px objects at IoU 0.75-0.95 - and the
+# public LB noise floor (~±0.005 on 500 images) means single small changes are undetectable there,
+# so the two are combined deliberately.
+# Scales (aspect-preserving via the hw_ratio patch): 576x1152 ... 960x1920, centred on 768x1536.
+__include__: ['./hsi_deim_dfine_s_1536.yml']
+
+output_dir: ../../runs/deim_f0_dfine_s_ms1536
+
+train_dataloader:
+  collate_fn:
+    base_size: 1536
+    base_size_repeat: 3
+    hw_ratio: 0.5
+    stop_epoch: 64
